@@ -1,2 +1,4 @@
 repos/
 *.log
+logs/inventory-*.json
+logs/inventory-*.md

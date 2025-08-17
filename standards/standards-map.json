@@ -4,11 +4,7 @@
     "node_modules/",
     "**/.venv/"
   ],
-  "ifMissingOnly": [
-    ".github/dependabot.yml",
-    ".editorconfig",
-    ".gitattributes"
-  ],
+  "ifMissingOnly": [],
   "labels": ["chore", "standards"],
   "prTitle": "chore: sync org standards",
   "prBody": "Automated standards sync via orchestrator.",

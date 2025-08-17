@@ -7,7 +7,22 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$raw = gh repo list $Org --json name,url,defaultBranchRef -L $Limit | ConvertFrom-Json
+try {
+  if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    throw "GitHub CLI (gh) not found in PATH"
+  }
+  gh auth status -h github.com | Out-Null
+} catch {
+  Write-Error "gh authentication check failed: $_"
+  throw
+}
+
+try {
+  $raw = gh repo list $Org --json name,url,defaultBranchRef -L $Limit | ConvertFrom-Json
+} catch {
+  Write-Error "Failed to list repos for $Org via gh: $_"
+  throw
+}
 
 $manifest = @{
   baseDir = 'repos'
@@ -23,5 +38,13 @@ foreach ($r in $raw) {
   }
 }
 
-($manifest | ConvertTo-Json -Depth 5) | Set-Content -Path $ManifestPath -NoNewline
-Write-Host "Updated manifest with $($manifest.repositories.Count) repositories for $Org"
+try {
+  $json = ($manifest | ConvertTo-Json -Depth 5)
+  $tmp = "$ManifestPath.tmp"
+  $json | Set-Content -Path $tmp -NoNewline
+  Move-Item -Force -Path $tmp -Destination $ManifestPath
+  Write-Host "Updated manifest with $($manifest.repositories.Count) repositories for $Org"
+} catch {
+  Write-Error "Failed to write manifest to ${ManifestPath}: $_"
+  throw
+}
