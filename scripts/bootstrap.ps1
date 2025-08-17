@@ -20,7 +20,7 @@ foreach ($r in $manifest.repositories) {
     continue
   }
   # If the target directory exists but isn't a git repo, back it up before cloning
-  if (Test-Path $target -and -not (Test-Path (Join-Path $target '.git'))) {
+  if ((Test-Path $target) -and -not (Test-Path (Join-Path $target '.git'))) {
     $timestamp = Get-Date -Format 'yyyyMMddHHmmss'
     $backup = "$target.bak-$timestamp"
     Write-Host "Backing up existing non-git folder: $target -> $backup"
