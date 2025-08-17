@@ -55,6 +55,25 @@ function Get-WorkflowNames {
   } catch { return @() }
 }
 
+function Get-CodeQLJobContext {
+  param($org, $repo, $branch)
+  try {
+    $wfs = gh api repos/$org/$repo/actions/workflows -H "Accept: application/vnd.github+json" 2>$null | ConvertFrom-Json
+    if (-not $wfs -or -not $wfs.workflows) { return $null }
+    $codeql = @($wfs.workflows | Where-Object { $_.name -eq 'CodeQL' })
+    foreach ($wf in $codeql) {
+      if (-not $wf.path) { continue }
+      $content = gh api repos/$org/$repo/contents/$($wf.path)?ref=$branch -H "Accept: application/vnd.github+json" 2>$null | ConvertFrom-Json
+      if ($null -ne $content -and $content.content) {
+        $yaml = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($content.content))
+        if ($yaml -match "(?ms)^\s*jobs:\s*.*?^\s{2,}analyze:\s") { return 'CodeQL / analyze' }
+        if ($yaml -match "(?ms)^\s*jobs:\s*.*?^\s{2,}codeql:\s") { return 'CodeQL / codeql' }
+      }
+    }
+  } catch { }
+  return $null
+}
+
 function Test-StandardsFiles {
   param($repoPath)
   $required = @(
@@ -83,6 +102,7 @@ foreach ($r in $manifest.repositories) {
   $prot = Get-Protection $ref.Org $ref.Repo $r.branch
   $settings = Get-RepoSettings $ref.Org $ref.Repo
   $wfNames = Get-WorkflowNames $ref.Org $ref.Repo
+  $codeqlContext = Get-CodeQLJobContext $ref.Org $ref.Repo $r.branch
   $files = Test-StandardsFiles $repoPath
   $labelsOk = @('bug','enhancement','chore','standards') | ForEach-Object { $_, (Test-Label $ref.Org $ref.Repo $_) }
 
@@ -97,11 +117,14 @@ foreach ($r in $manifest.repositories) {
     }
     $lines += "  - Code owner reviews: $($prot.required_pull_request_reviews.require_code_owner_reviews)"
     $lines += "  - Review count: $($prot.required_pull_request_reviews.required_approving_review_count)"
-    $lines += "  - Linear history: $($prot.required_linear_history)"
+    $linear = if ($prot.required_linear_history -and $prot.required_linear_history.enabled -ne $null) { $prot.required_linear_history.enabled } else { $prot.required_linear_history }
+    $lines += "  - Linear history: $linear"
     # Compare expected vs actual contexts
     $expected = @()
     if ($wfNames -contains 'CI') { $expected += @('CI / build-node','CI / build-python') }
-  if ($wfNames -contains 'CodeQL') { $expected += @('CodeQL / codeql') }
+    if ($wfNames -contains 'CodeQL') {
+      if ($codeqlContext) { $expected += @($codeqlContext) } else { $expected += @('CodeQL / codeql') }
+    }
     if ($expected.Count -gt 0) {
       $actual = @()
       if ($prot.required_status_checks -and $prot.required_status_checks.contexts) { $actual = @($prot.required_status_checks.contexts) }

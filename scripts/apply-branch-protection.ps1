@@ -7,13 +7,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Acquire token from gh
-$token = & gh auth token 2>$null
-if (-not $token) { throw "GitHub token not available. Run: gh auth login" }
+# Acquire token: prefer a high-privilege token if provided
+$token = $env:GH_ADMIN_TOKEN
+if (-not $token -or [string]::IsNullOrWhiteSpace($token)) {
+  $token = & gh auth token 2>$null
+}
+if (-not $token) { throw "GitHub token not available. Provide GH_ADMIN_TOKEN or run: gh auth login" }
 
 # Discover desired status check contexts based on active workflows
 function Get-DesiredStatusContexts {
-  param([string]$org, [string]$repo)
+  param(
+    [string]$org,
+    [string]$repo,
+    [string]$branch
+  )
   $contexts = New-Object System.Collections.Generic.List[string]
   try {
     $wfs = gh api repos/$org/$repo/actions/workflows -H "Accept: application/vnd.github+json" 2>$null | ConvertFrom-Json
@@ -25,25 +32,53 @@ function Get-DesiredStatusContexts {
       $contexts.Add('CI / build-python')
     }
     if ($names -contains 'CodeQL') {
-      # Caller workflow job id is 'codeql' -> context "CodeQL / codeql"
-      $contexts.Add('CodeQL / codeql')
+      # Determine the actual job id used by the CodeQL workflow (commonly 'analyze' or 'codeql')
+      try {
+        $codeqlWfs = @($wfs.workflows | Where-Object { $_.name -eq 'CodeQL' })
+        if ($codeqlWfs.Count -gt 0) {
+          foreach ($wf in $codeqlWfs) {
+            if (-not $wf.path) { continue }
+            $content = gh api repos/$org/$repo/contents/$($wf.path)?ref=$branch -H "Accept: application/vnd.github+json" 2>$null | ConvertFrom-Json
+            if ($null -ne $content -and $content.content) {
+              $yaml = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($content.content))
+              if ($yaml -match "(?ms)^\s*jobs:\s*.*?^\s{2,}analyze:\s") {
+                $contexts.Add('CodeQL / analyze')
+              } elseif ($yaml -match "(?ms)^\s*jobs:\s*.*?^\s{2,}codeql:\s") {
+                $contexts.Add('CodeQL / codeql')
+              } else {
+                # Fallback if unknown job id
+                $contexts.Add('CodeQL / codeql')
+              }
+            } else {
+              $contexts.Add('CodeQL / codeql')
+            }
+          }
+        } else {
+          $contexts.Add('CodeQL / codeql')
+        }
+      } catch {
+        $contexts.Add('CodeQL / codeql')
+      }
     }
   } catch {
-  Write-Warning "Could not enumerate workflows for ${org}/${repo}; using default required contexts. $_"
-  $contexts.Clear()
-  $contexts.Add('CI / build-node')
-  $contexts.Add('CI / build-python')
-  $contexts.Add('CodeQL / codeql')
+    Write-Warning "Could not enumerate workflows for ${org}/${repo}; using default required contexts. $_"
+    $contexts.Clear()
+    $contexts.Add('CI / build-node')
+    $contexts.Add('CI / build-python')
+    $contexts.Add('CodeQL / codeql')
   }
-  return ,$contexts.ToArray()
+  # Deduplicate
+  return ,(@($contexts) | Select-Object -Unique)
 }
 
-$contexts = Get-DesiredStatusContexts -org $Org -repo $Repo
+$contexts = Get-DesiredStatusContexts -org $Org -repo $Repo -branch $Branch
+# Ensure contexts is always an array for JSON serialization
+if (-not ($contexts -is [System.Array])) { $contexts = @($contexts) }
 
 $payload = [pscustomobject]@{
   required_status_checks = [pscustomobject]@{
     strict   = $true
-    contexts = $contexts
+    contexts = @($contexts)
   }
   enforce_admins = $true
   required_pull_request_reviews = [pscustomobject]@{

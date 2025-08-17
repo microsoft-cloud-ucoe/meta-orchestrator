@@ -42,7 +42,14 @@ $excludeDirs = @('.git','node_modules','.venv','venv','dist','build','out','.pyt
 function Get-Files {
   param([string]$root)
   $items = Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction SilentlyContinue |
-    Where-Object { $p = $_.FullName; -not ($excludeDirs | ForEach-Object { $p -match [regex]::Escape((Join-Path $root $_)) }) }
+    Where-Object {
+      $p = $_.FullName
+      # Exclude if under any excluded directory root
+      ($excludeDirs | Where-Object {
+        $exRoot = (Join-Path $root $_)
+        $p -like ("$exRoot*")
+      }).Count -eq 0
+    }
   return $items
 }
 
