@@ -98,6 +98,18 @@ foreach ($r in $manifest.repositories) {
     $lines += "  - Code owner reviews: $($prot.required_pull_request_reviews.require_code_owner_reviews)"
     $lines += "  - Review count: $($prot.required_pull_request_reviews.required_approving_review_count)"
     $lines += "  - Linear history: $($prot.required_linear_history)"
+    # Compare expected vs actual contexts
+    $expected = @()
+    if ($wfNames -contains 'CI') { $expected += @('CI / build-node','CI / build-python') }
+    if ($wfNames -contains 'CodeQL') { $expected += @('CodeQL / codeql') }
+    if ($expected.Count -gt 0) {
+      $actual = @()
+      if ($prot.required_status_checks -and $prot.required_status_checks.contexts) { $actual = @($prot.required_status_checks.contexts) }
+      $missing = @($expected | Where-Object { $actual -notcontains $_ })
+      if ($missing.Count -gt 0) {
+        $lines += "  - Missing required contexts (based on detected workflows): " + ($missing -join ', ')
+      }
+    }
   }
   if ($wfNames.Count -gt 0) {
     $lines += "- Detected workflows: " + ($wfNames -join ', ')
