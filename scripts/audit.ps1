@@ -101,7 +101,7 @@ foreach ($r in $manifest.repositories) {
     # Compare expected vs actual contexts
     $expected = @()
     if ($wfNames -contains 'CI') { $expected += @('CI / build-node','CI / build-python') }
-    if ($wfNames -contains 'CodeQL') { $expected += @('CodeQL / codeql') }
+  if ($wfNames -contains 'CodeQL') { $expected += @('CodeQL / analyze') }
     if ($expected.Count -gt 0) {
       $actual = @()
       if ($prot.required_status_checks -and $prot.required_status_checks.contexts) { $actual = @($prot.required_status_checks.contexts) }
