@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-node:
+    uses: ORG/.github/.github/workflows/reusable-ci-node.yml@main
+    with:
+      node-version: '20'
+  build-python:
+    uses: ORG/.github/.github/workflows/reusable-ci-python.yml@main
+    with:
+      python-version: '3.12'
