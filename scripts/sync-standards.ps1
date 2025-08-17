@@ -33,8 +33,14 @@ $branchPrefix = if ($map -and $map.branchPrefix) { $map.branchPrefix } else { "c
 $effectiveBranch = if ($BranchName) { $BranchName } else { "$branchPrefix$standardsVersion" }
 
 $manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
-$baseDir = Join-Path (Split-Path $ManifestPath -Parent) $manifest.baseDir
+$baseDir = (Resolve-Path (Join-Path (Split-Path $ManifestPath -Parent) $manifest.baseDir)).Path
 $stdRoot = (Resolve-Path $StandardsPath).Path
+
+# Prepare status tracking for parallel runs
+$statusLogDir = Join-Path $PSScriptRoot '../logs'
+if (!(Test-Path $statusLogDir)) { New-Item -ItemType Directory -Force -Path $statusLogDir | Out-Null }
+$statusLogPath = Join-Path $statusLogDir ("sync-status-" + [DateTime]::UtcNow.ToString("yyyyMMddHHmmss") + ".log")
+Set-Content -Path $statusLogPath -Value "" -Encoding UTF8
 
 function Invoke-StandardsWorker {
   param($r)
@@ -115,7 +121,8 @@ if ($Parallel) {
   $throttle = if ($PSBoundParameters.ContainsKey('Concurrency')) { $Concurrency } else { $auto }
   Write-Host "Parallel execution enabled. Throttle: $throttle (CPU: $([Environment]::ProcessorCount))"
   $manifest.repositories | ForEach-Object -Parallel {
-    param($r)
+    $r = $_
+  $ErrorActionPreference = 'Stop'
     $baseDir        = $using:baseDir
     $StandardsPath  = $using:StandardsPath
     $stdRoot        = $using:stdRoot
@@ -127,11 +134,13 @@ if ($Parallel) {
     $labels         = $using:labels
     $prTitle        = $using:prTitle
     $prBody         = $using:prBody
+  $statusLogPath  = $using:statusLogPath
 
     # Inline worker logic (mirrors Invoke-StandardsWorker)
     $target = Join-Path $baseDir $r.path
     if (!(Test-Path (Join-Path $target ".git"))) {
       Write-Host "Skipping (not cloned): $($r.name)"
+      try { Add-Content -Path $statusLogPath -Value "SKIP $($r.name) not-cloned" } catch {}
       return
     }
     $repoOrg = $Org
@@ -139,7 +148,7 @@ if ($Parallel) {
       if ($r.url -match 'github.com[:/](?<org>[^/]+)/') { $repoOrg = $Matches['org'] }
     }
 
-    try {
+  try {
       git -C $target fetch --all --prune | Out-Null
       git -C $target switch -C $effectiveBranch | Out-Null
 
@@ -165,17 +174,19 @@ if ($Parallel) {
       }
       }
 
-    git -C $target add -A
-    if ($DryRun) {
-        git -C $target status --porcelain
-        git -C $target reset --hard HEAD | Out-Null
-        git -C $target switch $r.branch | Out-Null
-        return
-    }
+  git -C $target add -A
+  if ($DryRun) {
+    try { git -C $target status --porcelain } catch {}
+    try { git -C $target reset --hard HEAD | Out-Null } catch {}
+    try { git -C $target switch $r.branch | Out-Null } catch {}
+    try { Add-Content -Path $statusLogPath -Value "OK   $($r.name) dry-run" } catch {}
+    return
+  }
 
     if ((git -C $target diff --cached --name-only).Length -eq 0) {
       Write-Host "No staged changes for $($r.name)"
       git -C $target switch $r.branch | Out-Null
+      try { Add-Content -Path $statusLogPath -Value "OK   $($r.name) no-changes" } catch {}
       return
     }
 
@@ -193,13 +204,29 @@ if ($Parallel) {
     } catch {
       Write-Host "PR may already exist for $($r.name). Skipping create."
     }
+    try { Add-Content -Path $statusLogPath -Value "OK   $($r.name) updated" } catch {}
     } catch {
       Write-Warning ("Worker error in {0}: {1}" -f $r.name, $_.Exception.Message)
       try { git -C $target switch $r.branch | Out-Null } catch {}
+      try { Add-Content -Path $statusLogPath -Value "ERROR $($r.name) $_" } catch {}
     }
   } -ThrottleLimit $throttle
+  # Summarize and set exit code appropriately
+  $hadErrors = $false
+  if (Test-Path $statusLogPath) {
+    $lines = Get-Content $statusLogPath -Raw
+    if ($lines -match "^ERROR ") { $hadErrors = $true }
+  }
+  if ($hadErrors) {
+    Write-Warning "One or more repositories failed during parallel sync. See $statusLogPath for details."
+    exit 1
+  } else {
+    Write-Host "Parallel sync completed successfully. See $statusLogPath for summary."
+    exit 0
+  }
 } else {
   foreach ($r in $manifest.repositories) {
     Invoke-StandardsWorker $r
   }
+  exit 0
 }

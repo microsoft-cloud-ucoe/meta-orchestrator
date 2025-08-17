@@ -22,7 +22,8 @@ if ($Parallel) {
   $throttle = if ($PSBoundParameters.ContainsKey('Concurrency')) { $Concurrency } else { $auto }
   Write-Host "Parallel execution enabled. Throttle: $throttle (CPU: $([Environment]::ProcessorCount))"
   $manifest.repositories | ForEach-Object -Parallel {
-    param($r, $scriptRoot)
+    $r = $_
+    $scriptRoot = $using:PSScriptRoot
     function Get-GitHubRef {
       param($url)
       if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)') {
@@ -32,7 +33,7 @@ if ($Parallel) {
     }
     $ref = Get-GitHubRef $r.url
     & "$scriptRoot/apply-labels.ps1" -Org $ref.Org -Repo $ref.Repo
-  } -ThrottleLimit $throttle -ArgumentList $PSScriptRoot
+  } -ThrottleLimit $throttle
 } else {
   foreach ($r in $manifest.repositories) {
     $ref = Get-GitHubRef $r.url

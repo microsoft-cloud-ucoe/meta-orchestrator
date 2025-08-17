@@ -9,7 +9,8 @@ $ErrorActionPreference = "Stop"
 $labels = @(
   @{ name = "bug"; color = "d73a4a"; description = "Something isn't working" },
   @{ name = "enhancement"; color = "a2eeef"; description = "New feature or request" },
-  @{ name = "chore"; color = "cfd3d7"; description = "Build/infra/maintenance" }
+  @{ name = "chore"; color = "cfd3d7"; description = "Build/infra/maintenance" },
+  @{ name = "standards"; color = "5319e7"; description = "Org standards change" }
 )
 
 foreach ($l in $labels) {

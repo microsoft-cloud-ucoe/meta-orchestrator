@@ -1,23 +1,23 @@
 {
-  "baseDir": "repos",
   "repositories": [
     {
+      "url": "https://github.com/microsoft-cloud-ucoe/msoft-guardian",
+      "branch": "main",
       "name": "msoft-guardian",
-      "path": "msoft-guardian",
-      "branch": "main",
-      "url": "https://github.com/microsoft-cloud-ucoe/msoft-guardian"
+      "path": "msoft-guardian"
     },
     {
+      "url": "https://github.com/microsoft-cloud-ucoe/msoft-pillars",
+      "branch": "main",
       "name": "msoft-pillars",
-      "path": "msoft-pillars",
-      "branch": "main",
-      "url": "https://github.com/microsoft-cloud-ucoe/msoft-pillars"
+      "path": "msoft-pillars"
     },
     {
-      "name": "ms-cloud-full-stack",
-      "path": "ms-cloud-full-stack",
+      "url": "https://github.com/microsoft-cloud-ucoe/ms-cloud-full-stack",
       "branch": "main",
-      "url": "https://github.com/microsoft-cloud-ucoe/ms-cloud-full-stack"
+      "name": "ms-cloud-full-stack",
+      "path": "ms-cloud-full-stack"
     }
-  ]
+  ],
+  "baseDir": "repos"
 }

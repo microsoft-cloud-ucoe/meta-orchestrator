@@ -12,9 +12,21 @@ $token = & gh auth token 2>$null
 if (-not $token) { throw "GitHub token not available. Run: gh auth login" }
 
 $body = @{
-  required_status_checks = @{ strict = $true; contexts = @() }
+  required_status_checks = @{ strict = $true; contexts = @(
+    "CI",
+    "CI / build-node",
+    "CI / build-python",
+    "CodeQL",
+    "CodeQL / analyze"
+  ) }
   enforce_admins = $true
-  required_pull_request_reviews = @{ required_approving_review_count = 1 }
+  required_pull_request_reviews = @{
+    required_approving_review_count = 1
+    dismiss_stale_reviews = $true
+    require_code_owner_reviews = $true
+    require_last_push_approval = $false
+    require_review_thread_resolution = $true
+  }
   restrictions = $null
   required_linear_history = $true
   allow_force_pushes = $false
