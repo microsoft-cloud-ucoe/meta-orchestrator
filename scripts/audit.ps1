@@ -46,6 +46,15 @@ function Get-RepoSettings {
   } catch { return $null }
 }
 
+function Get-WorkflowNames {
+  param($org, $repo)
+  try {
+    $wfs = gh api repos/$org/$repo/actions/workflows -H "Accept: application/vnd.github+json" 2>$null | ConvertFrom-Json
+    if ($wfs -and $wfs.workflows) { return @($wfs.workflows.name) }
+    return @()
+  } catch { return @() }
+}
+
 function Test-StandardsFiles {
   param($repoPath)
   $required = @(
@@ -73,6 +82,7 @@ foreach ($r in $manifest.repositories) {
 
   $prot = Get-Protection $ref.Org $ref.Repo $r.branch
   $settings = Get-RepoSettings $ref.Org $ref.Repo
+  $wfNames = Get-WorkflowNames $ref.Org $ref.Repo
   $files = Test-StandardsFiles $repoPath
   $labelsOk = @('bug','enhancement','chore','standards') | ForEach-Object { $_, (Test-Label $ref.Org $ref.Repo $_) }
 
@@ -82,9 +92,15 @@ foreach ($r in $manifest.repositories) {
     $ctxCount = if ($prot.required_status_checks -and $prot.required_status_checks.contexts) { $prot.required_status_checks.contexts.Count } else { 0 }
     $lines += "  - Strict: $($prot.required_status_checks.strict)"
     $lines += "  - Required status checks: $ctxCount"
+    if ($ctxCount -gt 0) {
+      $lines += "    - Contexts: " + ($prot.required_status_checks.contexts -join ', ')
+    }
     $lines += "  - Code owner reviews: $($prot.required_pull_request_reviews.require_code_owner_reviews)"
     $lines += "  - Review count: $($prot.required_pull_request_reviews.required_approving_review_count)"
     $lines += "  - Linear history: $($prot.required_linear_history)"
+  }
+  if ($wfNames.Count -gt 0) {
+    $lines += "- Detected workflows: " + ($wfNames -join ', ')
   }
   if ($settings) {
     $s = $settings

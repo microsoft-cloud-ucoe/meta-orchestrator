@@ -12,7 +12,7 @@ $manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
 function Set-RepoSettings {
   param([string]$Org, [string]$Repo)
   # Enable issues, wiki off, merge strategies, delete branch on merge, auto-merge, vulnerability alerts
-  try { gh repo edit "$Org/$Repo" --enable-issues --enable-projects=false --enable-wiki=false --allow-update-branch=true --delete-branch-on-merge=true --enable-auto-merge=true | Out-Null } catch {}
+  try { gh repo edit "$Org/$Repo" --enable-issues --enable-projects=false --enable-wiki=false --allow-update-branch=true --delete-branch-on-merge=true --enable-auto-merge=true --enable-squash-merge=true --enable-merge-commit=false --enable-rebase-merge=false | Out-Null } catch {}
   try { gh repo edit "$Org/$Repo" --visibility public | Out-Null } catch {}
   try { gh api -X PUT repos/$Org/$Repo/vulnerability-alerts -H "Accept: application/vnd.github+json" | Out-Null } catch {}
   # Enable Advanced Security, Secret Scanning, Push Protection, and Dependabot security updates
@@ -49,7 +49,7 @@ if ($Parallel) {
     $ref = Get-GitHubRef $r.url
     try {
       gh repo view "$($ref.Org)/$($ref.Repo)" 1>$null 2>$null
-      gh repo edit "$($ref.Org)/$($ref.Repo)" --enable-issues --enable-projects=false --enable-wiki=false --allow-update-branch=true --delete-branch-on-merge=true --enable-auto-merge=true 1>$null 2>$null
+  gh repo edit "$($ref.Org)/$($ref.Repo)" --enable-issues --enable-projects=false --enable-wiki=false --allow-update-branch=true --delete-branch-on-merge=true --enable-auto-merge=true --enable-squash-merge=true --enable-merge-commit=false --enable-rebase-merge=false 1>$null 2>$null
       gh api -X PUT repos/$($ref.Org)/$($ref.Repo)/vulnerability-alerts -H "Accept: application/vnd.github+json" 1>$null 2>$null
       $payload = @{ security_and_analysis = @{ advanced_security = @{ status = 'enabled' }; secret_scanning = @{ status = 'enabled' }; secret_scanning_push_protection = @{ status = 'enabled' }; dependabot_security_updates = @{ status = 'enabled' } } } | ConvertTo-Json -Depth 5
       $payload | gh api -X PATCH repos/$($ref.Org)/$($ref.Repo) -H "Accept: application/vnd.github+json" --input - 1>$null 2>$null
