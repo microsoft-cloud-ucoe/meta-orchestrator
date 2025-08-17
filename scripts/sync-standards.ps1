@@ -223,9 +223,17 @@ if ($Parallel) {
   }
   if ($hadErrors) {
     Write-Warning "One or more repositories failed during parallel sync. See $statusLogPath for details."
+    if (Test-Path $statusLogPath) {
+      Write-Host "--- Sync status summary ($statusLogPath) ---"
+      try { Get-Content $statusLogPath | ForEach-Object { Write-Host $_ } } catch {}
+    }
     exit 1
   } else {
     Write-Host "Parallel sync completed successfully. See $statusLogPath for summary."
+    if (Test-Path $statusLogPath) {
+      Write-Host "--- Sync status summary ($statusLogPath) ---"
+      try { Get-Content $statusLogPath | ForEach-Object { Write-Host $_ } } catch {}
+    }
     exit 0
   }
 } else {
