@@ -106,6 +106,8 @@ function Invoke-StandardsWorker {
       if ($labels -and $labels.Count -gt 0) {
         foreach ($l in $labels) { gh pr edit -R $repoFull --add-label "$l" 2>$null }
       }
+  # Try enable auto-merge (squash) if branch protection allows it
+  try { gh pr merge -R $repoFull --auto --squash 2>$null } catch {}
     }
   } catch {
     Write-Host "PR may already exist for $($r.name). Skipping create."
@@ -200,6 +202,8 @@ if ($Parallel) {
         if ($labels -and $labels.Count -gt 0) {
           foreach ($l in $labels) { gh pr edit -R $repoFull --add-label "$l" 2>$null }
         }
+  # Try enable auto-merge (squash) if branch protection allows it
+  try { gh pr merge -R $repoFull --auto --squash 2>$null } catch {}
       }
     } catch {
       Write-Host "PR may already exist for $($r.name). Skipping create."
@@ -214,8 +218,8 @@ if ($Parallel) {
   # Summarize and set exit code appropriately
   $hadErrors = $false
   if (Test-Path $statusLogPath) {
-    $lines = Get-Content $statusLogPath -Raw
-    if ($lines -match "^ERROR ") { $hadErrors = $true }
+    $lines = Get-Content $statusLogPath
+    if ($lines | Where-Object { $_ -like 'ERROR *' }) { $hadErrors = $true }
   }
   if ($hadErrors) {
     Write-Warning "One or more repositories failed during parallel sync. See $statusLogPath for details."

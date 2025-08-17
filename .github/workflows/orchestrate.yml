@@ -5,26 +5,53 @@ on:
     - cron: '15 2 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: orchestrate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   orchestrate:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout orchestrator
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Node (for gh and scripts if needed)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: Install gh CLI
+        shell: bash
         run: |
           sudo apt-get update -y
           sudo apt-get install -y gh
+      - name: Configure git user for commits
+        shell: bash
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+      - name: Validate gh auth
+        shell: bash
+        run: |
+          if ! gh auth status -h github.com >/dev/null 2>&1; then
+            echo "::error::gh not authenticated. Set ORG_GH_TOKEN secret with repo/org write permissions." && exit 1
+          fi
       - name: Refresh manifest
         shell: pwsh
         run: ./meta-orchestrator/scripts/refresh-repos.ps1 -Org microsoft-cloud-ucoe -Limit 500
       - name: Bootstrap clones
         shell: pwsh
         run: ./meta-orchestrator/scripts/bootstrap.ps1
+      - name: Apply repo settings/security
+        shell: pwsh
+        run: ./meta-orchestrator/scripts/apply-repo-settings-all.ps1 -Parallel
       - name: Sync standards
         shell: pwsh
         run: ./meta-orchestrator/scripts/sync-standards.ps1 -Parallel

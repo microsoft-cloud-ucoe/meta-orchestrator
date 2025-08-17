@@ -1,0 +1,6 @@
+{
+  "ignores": [
+    "CODEOWNERS",
+    ".github/CODEOWNERS"
+  ]
+}

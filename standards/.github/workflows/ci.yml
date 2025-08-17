@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: ["main"]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   build-node:
     uses: microsoft-cloud-ucoe/.github/.github/workflows/reusable-ci-node.yml@main
