@@ -25,15 +25,15 @@ function Get-DesiredStatusContexts {
       $contexts.Add('CI / build-python')
     }
     if ($names -contains 'CodeQL') {
-      # Reusable CodeQL workflow defines job id 'analyze' -> context "CodeQL / analyze"
-      $contexts.Add('CodeQL / analyze')
+      # Caller workflow job id is 'codeql' -> context "CodeQL / codeql"
+      $contexts.Add('CodeQL / codeql')
     }
   } catch {
   Write-Warning "Could not enumerate workflows for ${org}/${repo}; using default required contexts. $_"
   $contexts.Clear()
   $contexts.Add('CI / build-node')
   $contexts.Add('CI / build-python')
-  $contexts.Add('CodeQL / analyze')
+  $contexts.Add('CodeQL / codeql')
   }
   return ,$contexts.ToArray()
 }
