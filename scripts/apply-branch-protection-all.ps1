@@ -31,11 +31,16 @@ if ($Parallel) {
       throw "Cannot parse org/repo from URL: $url"
     }
     $ref = Get-GitHubRef $r.url
+    if ($ref.Repo -eq '.github') {
+      Write-Host "Skipping branch protection for special repository $($ref.Org)/$($ref.Repo)"
+      return
+    }
     & "$scriptRoot/apply-branch-protection.ps1" -Org $ref.Org -Repo $ref.Repo -Branch $r.branch
   } -ThrottleLimit $throttle
 } else {
   foreach ($r in $manifest.repositories) {
     $ref = Get-GitHubRef $r.url
+    if ($ref.Repo -eq '.github') { Write-Host "Skipping branch protection for special repository $($ref.Org)/$($ref.Repo)"; continue }
     & "$PSScriptRoot/apply-branch-protection.ps1" -Org $ref.Org -Repo $ref.Repo -Branch $r.branch
   }
 }

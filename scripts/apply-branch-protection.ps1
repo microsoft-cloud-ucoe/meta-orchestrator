@@ -45,14 +45,20 @@ $headers = @{
   'X-GitHub-Api-Version' = '2022-11-28'
 }
 
-Invoke-RestMethod -Method Put -Uri $uri -Headers $headers -Body $json -ContentType 'application/json' | Out-Null
+try {
+  Invoke-RestMethod -Method Put -Uri $uri -Headers $headers -Body $json -ContentType 'application/json' | Out-Null
+} catch {
+  # If lacking admin:repo_hook or proper permissions, GitHub returns 403. Don't fail the whole job.
+  Write-Warning "Skipping branch protection for ${Org}/${Repo} (${Branch}): $_"
+  return
+}
 
 # Enable required signed commits on the branch (separate endpoint)
 try {
   $sigUri = "https://api.github.com/repos/$Org/$Repo/branches/$Branch/protection/required_signatures"
   Invoke-RestMethod -Method Put -Uri $sigUri -Headers $headers | Out-Null
 } catch {
-  Write-Warning "Could not enable required signatures for $Org/$Repo ($Branch): $_"
+  Write-Warning "Could not enable required signatures for ${Org}/${Repo} (${Branch}): $_"
 }
 
-Write-Host "Applied branch protection to $Org/$Repo ($Branch)"
+Write-Host "Applied branch protection to ${Org}/${Repo} (${Branch})"
