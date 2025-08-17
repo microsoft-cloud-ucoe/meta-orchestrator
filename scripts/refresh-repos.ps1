@@ -45,6 +45,6 @@ try {
   Move-Item -Force -Path $tmp -Destination $ManifestPath
   Write-Host "Updated manifest with $($manifest.repositories.Count) repositories for $Org"
 } catch {
-  Write-Error "Failed to write manifest to $ManifestPath: $_"
+  Write-Error "Failed to write manifest to ${ManifestPath}: $_"
   throw
 }
