@@ -32,11 +32,16 @@ if ($Parallel) {
       throw "Cannot parse org/repo from URL: $url"
     }
     $ref = Get-GitHubRef $r.url
+    if ($ref.Repo -eq '.github') {
+      Write-Host "Skipping labels for special repository $($ref.Org)/$($ref.Repo)"
+      return
+    }
     & "$scriptRoot/apply-labels.ps1" -Org $ref.Org -Repo $ref.Repo
   } -ThrottleLimit $throttle
 } else {
   foreach ($r in $manifest.repositories) {
     $ref = Get-GitHubRef $r.url
+    if ($ref.Repo -eq '.github') { Write-Host "Skipping labels for special repository $($ref.Org)/$($ref.Repo)"; continue }
     & "$PSScriptRoot/apply-labels.ps1" -Org $ref.Org -Repo $ref.Repo
   }
 }
