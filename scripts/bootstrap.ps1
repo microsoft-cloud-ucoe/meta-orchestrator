@@ -19,6 +19,13 @@ foreach ($r in $manifest.repositories) {
     Write-Host "Already cloned: $($r.name) -> $target"
     continue
   }
+  # If the target directory exists but isn't a git repo, back it up before cloning
+  if (Test-Path $target -and -not (Test-Path (Join-Path $target '.git'))) {
+    $timestamp = Get-Date -Format 'yyyyMMddHHmmss'
+    $backup = "$target.bak-$timestamp"
+    Write-Host "Backing up existing non-git folder: $target -> $backup"
+    Move-Item -Force -Path $target -Destination $backup
+  }
   Write-Host "Cloning $($r.url) (branch $($r.branch)) -> $target"
   git clone --branch $r.branch $r.url $target
 }

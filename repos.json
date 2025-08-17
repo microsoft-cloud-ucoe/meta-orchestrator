@@ -1,12 +1,23 @@
 {
-  "$schema": "https://json.schemastore.org/json",
   "baseDir": "repos",
   "repositories": [
     {
-      "name": "example-repo",
-      "url": "https://github.com/ORG/example-repo.git",
+      "name": "msoft-guardian",
+      "path": "msoft-guardian",
       "branch": "main",
-      "path": "example-repo"
+      "url": "https://github.com/microsoft-cloud-ucoe/msoft-guardian"
+    },
+    {
+      "name": "msoft-pillars",
+      "path": "msoft-pillars",
+      "branch": "main",
+      "url": "https://github.com/microsoft-cloud-ucoe/msoft-pillars"
+    },
+    {
+      "name": "ms-cloud-full-stack",
+      "path": "ms-cloud-full-stack",
+      "branch": "main",
+      "url": "https://github.com/microsoft-cloud-ucoe/ms-cloud-full-stack"
     }
   ]
 }
