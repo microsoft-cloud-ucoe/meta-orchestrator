@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
+      # Optional elevated token for admin operations (e.g., branch protection)
+      GH_ADMIN_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
     permissions:
       contents: write
       pull-requests: write
