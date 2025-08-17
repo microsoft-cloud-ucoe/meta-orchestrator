@@ -61,3 +61,23 @@ jobs:
       - name: Apply branch protection
         shell: bash
         run: pwsh -File ./scripts/apply-branch-protection-all.ps1 -Parallel
+      - name: Generate audit report
+        shell: bash
+        run: pwsh -File ./scripts/audit.ps1 -OutputPath ./logs/audit-${{ github.run_id }}.md
+      - name: Upload audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report-${{ github.run_id }}
+          path: ./logs/audit-${{ github.run_id }}.md
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Post audit summary
+        shell: bash
+        run: |
+          if [ -f ./logs/audit-${{ github.run_id }}.md ]; then
+            echo "## Audit Report" >> "$GITHUB_STEP_SUMMARY"
+            echo >> "$GITHUB_STEP_SUMMARY"
+            cat ./logs/audit-${{ github.run_id }}.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Audit report not found." >> "$GITHUB_STEP_SUMMARY"
+          fi
