@@ -29,12 +29,10 @@ function Get-DesiredStatusContexts {
       $contexts.Add('CodeQL / analyze')
     }
   } catch {
-    Write-Warning "Could not enumerate workflows for ${org}/${repo}; falling back to defaults. $_"
-  }
-  # Fallback defaults if detection yielded none
-  if ($contexts.Count -eq 0) {
-    $contexts.Add('CI / build-node')
-    $contexts.Add('CI / build-python')
+  Write-Warning "Could not enumerate workflows for ${org}/${repo}; using default required contexts. $_"
+  $contexts.Clear()
+  $contexts.Add('CI / build-node')
+  $contexts.Add('CI / build-python')
   $contexts.Add('CodeQL / analyze')
   }
   return ,$contexts.ToArray()
