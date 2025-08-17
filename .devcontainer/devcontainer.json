@@ -1,17 +1,7 @@
 {
-  "name": "Orchestrator Dev",
+  "name": "Repo Dev",
   "image": "mcr.microsoft.com/devcontainers/universal:2",
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {}
-  },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "github.vscode-github-actions",
-        "ms-azuretools.vscode-bicep",
-        "ms-python.python",
-        "esbenp.prettier-vscode"
-      ]
-    }
   }
 }

@@ -1,0 +1,16 @@
+{
+  "excludes": [
+    ".git/",
+    "node_modules/",
+    "**/.venv/"
+  ],
+  "ifMissingOnly": [
+    ".github/dependabot.yml",
+    ".editorconfig",
+    ".gitattributes"
+  ],
+  "labels": ["chore", "standards"],
+  "prTitle": "chore: sync microsoft-cloud-ucoe standards",
+  "prBody": "Automated standards sync via orchestrator.",
+  "branchPrefix": "chore/standards-sync/"
+}

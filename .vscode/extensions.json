@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "github.vscode-github-actions",
+    "ms-azuretools.vscode-bicep",
+    "ms-python.python",
+    "esbenp.prettier-vscode"
+  ]
+}

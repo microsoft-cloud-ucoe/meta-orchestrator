@@ -1,0 +1,3 @@
+*               @microsoft-cloud-ucoe/maintainers
+.github/        @microsoft-cloud-ucoe/platform
+**/*.md         @microsoft-cloud-ucoe/docs
