@@ -61,6 +61,36 @@ jobs:
       - name: Apply branch protection
         shell: bash
         run: pwsh -File ./scripts/apply-branch-protection-all.ps1 -Parallel
+      - name: Generate inventory report
+        shell: bash
+        run: pwsh -File ./scripts/inventory.ps1 -OutputDir ./logs
+      - name: Prepare inventory artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest_md=$(ls -1t ./logs/inventory-*.md | head -n1)
+          latest_json=$(ls -1t ./logs/inventory-*.json | head -n1)
+          cp "$latest_md"   ./logs/inventory-${{ github.run_id }}.md
+          cp "$latest_json" ./logs/inventory-${{ github.run_id }}.json
+      - name: Upload inventory artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-report-${{ github.run_id }}
+          path: |
+            ./logs/inventory-${{ github.run_id }}.md
+            ./logs/inventory-${{ github.run_id }}.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Post inventory summary
+        shell: bash
+        run: |
+          if [ -f ./logs/inventory-${{ github.run_id }}.md ]; then
+            echo "## Inventory Report" >> "$GITHUB_STEP_SUMMARY"
+            echo >> "$GITHUB_STEP_SUMMARY"
+            cat ./logs/inventory-${{ github.run_id }}.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Inventory report not found." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Generate audit report
         shell: bash
         run: pwsh -File ./scripts/audit.ps1 -OutputPath ./logs/audit-${{ github.run_id }}.md
