@@ -100,7 +100,7 @@ function Invoke-StandardsWorker {
   git -C $target push -u origin $effectiveBranch -f | Out-Null
 
   try {
-    if ($r.url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)') {
+    if ($r.url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/]+)') {
       $repoFull = "$($Matches['org'])/$($Matches['repo'])"
       gh pr create -R $repoFull --fill --base $r.branch --head $effectiveBranch --title $prTitle --body $prBody 2>$null
       if ($labels -and $labels.Count -gt 0) {
@@ -122,7 +122,8 @@ if ($Parallel) {
   $auto = [Math]::Max(8, [Environment]::ProcessorCount * 2)
   $throttle = if ($PSBoundParameters.ContainsKey('Concurrency')) { $Concurrency } else { $auto }
   Write-Host "Parallel execution enabled. Throttle: $throttle (CPU: $([Environment]::ProcessorCount))"
-  $manifest.repositories | ForEach-Object -Parallel {
+  try {
+    $manifest.repositories | ForEach-Object -Parallel {
     $r = $_
   $ErrorActionPreference = 'Stop'
     $baseDir        = $using:baseDir
@@ -155,25 +156,40 @@ if ($Parallel) {
       git -C $target switch -C $effectiveBranch | Out-Null
 
       Get-ChildItem -Path $StandardsPath -Recurse -File | ForEach-Object {
-      $full = $_.FullName
-      $fullResolved = (Resolve-Path $full).Path
-      if (-not $fullResolved.StartsWith($stdRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Path resolution error: $fullResolved is not under standards root $stdRoot"
-      }
-  $rel = $fullResolved.Substring($stdRoot.Length).TrimStart([char[]]"\\/")
-      foreach ($pattern in $excludes) { if ($rel -like $pattern) { return } }
-      $dest = Join-Path $target $rel
-      New-Item -ItemType Directory -Force -Path (Split-Path $dest -Parent) | Out-Null
+        try {
+          $full = $_.FullName
+          $fullResolved = (Resolve-Path $full).Path
+          if (-not $fullResolved.StartsWith($stdRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            try { Add-Content -Path $statusLogPath -Value "ERROR $($r.name) path-outside-standards $fullResolved" } catch {}
+            return
+          }
+          $rel = $fullResolved.Substring($stdRoot.Length).TrimStart([char[]]"\\/")
+          foreach ($pattern in $excludes) { if ($rel -like $pattern) { return } }
+          $dest = Join-Path $target $rel
+          New-Item -ItemType Directory -Force -Path (Split-Path $dest -Parent) | Out-Null
 
-      if ($ifMissingOnly -contains $rel -and (Test-Path $dest)) { return }
+          if ($ifMissingOnly -contains $rel -and (Test-Path $dest)) { return }
 
-      if ([string]::IsNullOrWhiteSpace($repoOrg)) {
-        Copy-Item -Path $full -Destination $dest -Force
-      } else {
-        $content = Get-Content $full -Raw
-        $content = $content -replace '\bORG\b', $repoOrg
-        Set-Content -Path $dest -Value $content -NoNewline
-      }
+          if ([string]::IsNullOrWhiteSpace($repoOrg)) {
+            Copy-Item -Path $full -Destination $dest -Force
+          } else {
+            try {
+              $content = Get-Content $full -Raw -ErrorAction Stop
+              if ($content -match '\bORG\b') {
+                $newContent = $content -replace '\bORG\b', $repoOrg
+                Set-Content -Path $dest -Value $newContent -Encoding utf8
+              } else {
+                Copy-Item -Path $full -Destination $dest -Force
+              }
+            } catch {
+              # Fallback to copy if reading/writing as text failed
+              Copy-Item -Path $full -Destination $dest -Force
+            }
+          }
+        } catch {
+          Write-Warning ("File op error in {0}: {1}" -f $r.name, $_.Exception.Message)
+          try { Add-Content -Path $statusLogPath -Value "ERROR $($r.name) file-op $_" } catch {}
+        }
       }
 
   git -C $target add -A
@@ -214,8 +230,11 @@ if ($Parallel) {
       try { git -C $target switch $r.branch | Out-Null } catch {}
       try { Add-Content -Path $statusLogPath -Value "ERROR $($r.name) $_" } catch {}
     }
-  } -ThrottleLimit $throttle
-  # Summarize and set exit code appropriately
+    } -ThrottleLimit $throttle -ErrorAction Continue
+  } catch {
+    Write-Warning ("Parallel loop threw: {0}" -f $_)
+  }
+  # Summarize and set exit code appropriately (always run)
   $hadErrors = $false
   if (Test-Path $statusLogPath) {
     $lines = Get-Content $statusLogPath
