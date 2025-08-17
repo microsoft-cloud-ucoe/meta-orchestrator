@@ -28,7 +28,7 @@ function Set-RepoSettings {
 }
 
 function Get-GitHubRef { param($url)
-  if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)') {
+  if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/]+)') {
     return [pscustomobject]@{ Org = $Matches['org']; Repo = $Matches['repo'] }
   }
   throw "Cannot parse org/repo from URL: $url"
@@ -41,7 +41,7 @@ if ($Parallel) {
   $manifest.repositories | ForEach-Object -Parallel {
     $r = $_; $ErrorActionPreference = 'Stop'
     function Get-GitHubRef { param($url)
-      if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)') {
+      if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/]+)') {
         return [pscustomobject]@{ Org = $Matches['org']; Repo = $Matches['repo'] }
       }
       throw "Cannot parse org/repo from URL: $url"

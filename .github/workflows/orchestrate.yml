@@ -45,19 +45,19 @@ jobs:
           fi
       - name: Refresh manifest
         shell: pwsh
-        run: ./meta-orchestrator/scripts/refresh-repos.ps1 -Org microsoft-cloud-ucoe -Limit 500
+        run: ./scripts/refresh-repos.ps1 -Org microsoft-cloud-ucoe -Limit 500
       - name: Bootstrap clones
         shell: pwsh
-        run: ./meta-orchestrator/scripts/bootstrap.ps1
+        run: ./scripts/bootstrap.ps1
       - name: Apply repo settings/security
         shell: pwsh
-        run: ./meta-orchestrator/scripts/apply-repo-settings-all.ps1 -Parallel
+        run: ./scripts/apply-repo-settings-all.ps1 -Parallel
       - name: Sync standards
         shell: pwsh
-        run: ./meta-orchestrator/scripts/sync-standards.ps1 -Parallel
+        run: ./scripts/sync-standards.ps1 -Parallel
       - name: Apply labels
         shell: pwsh
-        run: ./meta-orchestrator/scripts/apply-labels-all.ps1 -Parallel
+        run: ./scripts/apply-labels-all.ps1 -Parallel
       - name: Apply branch protection
         shell: pwsh
-        run: ./meta-orchestrator/scripts/apply-branch-protection-all.ps1 -Parallel
+        run: ./scripts/apply-branch-protection-all.ps1 -Parallel

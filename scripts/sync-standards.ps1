@@ -196,7 +196,7 @@ if ($Parallel) {
     git -C $target push -u origin $effectiveBranch -f | Out-Null
 
     try {
-      if ($r.url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)') {
+      if ($r.url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/]+)') {
         $repoFull = "$($Matches['org'])/$($Matches['repo'])"
         gh pr create -R $repoFull --fill --base $r.branch --head $effectiveBranch --title $prTitle --body $prBody 2>$null
         if ($labels -and $labels.Count -gt 0) {

@@ -11,7 +11,7 @@ $manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
 
 function Get-GitHubRef {
   param($url)
-  if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)') {
+  if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/]+)') {
     return [pscustomobject]@{ Org = $Matches['org']; Repo = $Matches['repo'] }
   }
   throw "Cannot parse org/repo from URL: $url"
@@ -26,7 +26,7 @@ if ($Parallel) {
     $scriptRoot = $using:PSScriptRoot
     function Get-GitHubRef {
       param($url)
-      if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)') {
+      if ($url -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/]+)') {
         return [pscustomobject]@{ Org = $Matches['org']; Repo = $Matches['repo'] }
       }
       throw "Cannot parse org/repo from URL: $url"
