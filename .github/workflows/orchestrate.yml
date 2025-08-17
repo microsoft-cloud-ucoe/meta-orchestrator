@@ -44,20 +44,20 @@ jobs:
             echo "::error::gh not authenticated. Set ORG_GH_TOKEN secret with repo/org write permissions." && exit 1
           fi
       - name: Refresh manifest
-        shell: pwsh
-        run: ./scripts/refresh-repos.ps1 -Org microsoft-cloud-ucoe -Limit 500
+        shell: bash
+        run: pwsh -File ./scripts/refresh-repos.ps1 -Org microsoft-cloud-ucoe -Limit 500
       - name: Bootstrap clones
-        shell: pwsh
-        run: ./scripts/bootstrap.ps1
+        shell: bash
+        run: pwsh -File ./scripts/bootstrap.ps1
       - name: Apply repo settings/security
-        shell: pwsh
-        run: ./scripts/apply-repo-settings-all.ps1 -Parallel
+        shell: bash
+        run: pwsh -File ./scripts/apply-repo-settings-all.ps1 -Parallel
       - name: Sync standards
-        shell: pwsh
-        run: ./scripts/sync-standards.ps1 -Parallel
+        shell: bash
+        run: pwsh -File ./scripts/sync-standards.ps1 -Parallel
       - name: Apply labels
-        shell: pwsh
-        run: ./scripts/apply-labels-all.ps1 -Parallel
+        shell: bash
+        run: pwsh -File ./scripts/apply-labels-all.ps1 -Parallel
       - name: Apply branch protection
-        shell: pwsh
-        run: ./scripts/apply-branch-protection-all.ps1 -Parallel
+        shell: bash
+        run: pwsh -File ./scripts/apply-branch-protection-all.ps1 -Parallel
