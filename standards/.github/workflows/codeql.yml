@@ -10,6 +10,6 @@ on:
 
 jobs:
   codeql:
-    uses: ORG/.github/.github/workflows/reusable-codeql.yml@main
+    uses: microsoft-cloud-ucoe/.github/.github/workflows/reusable-codeql.yml@main
     with:
       languages: 'javascript,python'
