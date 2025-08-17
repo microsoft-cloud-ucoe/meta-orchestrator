@@ -10,12 +10,12 @@ $ErrorActionPreference = "Stop"
 try {
   $repoInfo = gh api "repos/$Org/$Repo" -H "Accept: application/vnd.github+json" | ConvertFrom-Json
 } catch {
-  Write-Warning "Skipping $Org/$Repo: unable to query repository ($_)"
+  Write-Warning "Skipping ${Org}/${Repo}: unable to query repository ($_)"
   return
 }
 
 if (-not $repoInfo.has_issues) {
-  Write-Host "Skipping $Org/$Repo: issues are disabled, labels not applicable."
+  Write-Host "Skipping ${Org}/${Repo}: issues are disabled, labels not applicable."
   return
 }
 
@@ -37,15 +37,15 @@ foreach ($l in $labels) {
       # If create failed (likely exists), try edit
       & gh label edit "$name" --color "$color" --description "$desc" --repo "$Org/$Repo" 1>$null 2>$null
       if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Failed to ensure label '$name' in $Org/$Repo (exit $LASTEXITCODE). Skipping."
+        Write-Warning "Failed to ensure label '$name' in ${Org}/${Repo} (exit $LASTEXITCODE). Skipping."
       } else {
-        Write-Host "Updated label '$name' in $Org/$Repo"
+        Write-Host "Updated label '$name' in ${Org}/${Repo}"
       }
     } else {
-      Write-Host "Created label '$name' in $Org/$Repo"
+      Write-Host "Created label '$name' in ${Org}/${Repo}"
     }
   } catch {
     # Do not fail the whole job on label errors; log and continue
-    Write-Warning "Error ensuring label '$name' in $Org/$Repo: $_"
+    Write-Warning "Error ensuring label '$name' in ${Org}/${Repo}: $_"
   }
 }
